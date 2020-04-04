@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
+  public ClickEvent OnClick;
   public LayerMask ObstacleMask;
   public GameObject Ground;
   public int NodesPerLine = 1;
@@ -104,10 +105,11 @@ public class Grid : MonoBehaviour
 
   private void UpdateTile(float x, float z)
   {
-    InvokeOnAllNodes(node => node.ResetColor());
+    //InvokeOnAllNodes(node => node.ResetColor());
 
     var coords = GetCoordinatesFromPosition(x, z);
 
+    OnClick?.Invoke(GridNodes[coords.z, coords.x]);
     GridNodes[coords.x, coords.z].Color = Color.blue;
     Debug.Log($"X: {coords.x} | Z: {coords.z}");
   }

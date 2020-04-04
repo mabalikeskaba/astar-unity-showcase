@@ -20,8 +20,8 @@ public class Pathfinding : MonoBehaviour
     }
   }
 
-  // Update is called once per frame
-  void Update()
+  public void OnGridClicked(GridNode node)
   {
+    NodeGrid.UpdateNode(node, updateNode => updateNode.Color = Color.blue);
   }
 }
