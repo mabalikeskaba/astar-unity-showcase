@@ -11,6 +11,11 @@ public class GridNode
     Position = position;
     Size = size;
 
+    ResetColor();
+  }
+
+  public void ResetColor()
+  {
     Color = Color.white;
   }
 }
