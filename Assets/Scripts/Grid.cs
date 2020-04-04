@@ -1,20 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
+  public LayerMask ObstacleMask;
   public int NodesPerLine = 1;
 
   private GridNode[,] GridNodes;
   private Vector3 mNodeSize;
   private const float NodeHeight = 0.25f;
+  private const float CollisionRadius = 0.05f;
 
   float bottomLeftX => transform.position.x - transform.localScale.x / 2 + mNodeSize.x / 2;
   float bottomLeftY => transform.position.y;
   float bottomLeftZ => transform.position.z - transform.localScale.z / 2 + mNodeSize.z / 2;
 
-  // Start is called before the first frame update
   void Start()
   {
     GridNodes = new GridNode[NodesPerLine, NodesPerLine];
@@ -25,10 +25,9 @@ public class Grid : MonoBehaviour
     {
       for (int j = 0; j < NodesPerLine; j++)
       {
-        GridNodes[i, j] = new GridNode(new Vector3(bottomLeftX + mNodeSize.x * i, bottomLeftY, bottomLeftZ + mNodeSize.z * j), mNodeSize);
-        //if (i % 2 == 0 || j % 2 == 0)
-        //  GridNodes[i, j].Color = Color.red;
-
+        var pos = new Vector3(bottomLeftX + mNodeSize.x * i, bottomLeftY, bottomLeftZ + mNodeSize.z * j);
+        GridNodes[i, j] = new GridNode(pos, mNodeSize);
+        GridNodes[i, j].Color = Physics.CheckBox(pos, new Vector3(CollisionRadius, CollisionRadius, CollisionRadius), transform.rotation, ObstacleMask) ? Color.red : Color.white;
       }
     }
   }
@@ -51,7 +50,7 @@ public class Grid : MonoBehaviour
     var idxX = (int)Mathf.Floor(Mathf.Abs(transform.position.x - transform.localScale.x / 2 - x) / mNodeSize.x);
     var idxZ = (int)Mathf.Floor(Mathf.Abs(transform.position.z - transform.localScale.z / 2 - z) / mNodeSize.z);
 
-    GridNodes[idxX, idxZ].Color = Color.red;
+    GridNodes[idxX, idxZ].Color = Color.blue;
     Debug.Log($"X: {idxX} | Z: {idxZ}");
   }
 
