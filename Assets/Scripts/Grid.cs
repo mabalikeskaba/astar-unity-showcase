@@ -4,16 +4,17 @@ using UnityEngine;
 public class Grid : MonoBehaviour
 {
   public LayerMask ObstacleMask;
+  public GameObject Ground;
   public int NodesPerLine = 1;
 
   private GridNode[,] GridNodes;
   private Vector3 mNodeSize;
   private const float NodeHeight = 0.25f;
-  private const float CollisionRadius = 0.05f;
+  private const float CollisionRadius = 0.25f;
 
-  float bottomLeftX => transform.position.x - transform.localScale.x / 2 + mNodeSize.x / 2;
-  float bottomLeftY => transform.position.y;
-  float bottomLeftZ => transform.position.z - transform.localScale.z / 2 + mNodeSize.z / 2;
+  float bottomLeftX => Ground.transform.position.x - Ground.transform.localScale.x / 2 + mNodeSize.x / 2;
+  float bottomLeftY => Ground.transform.position.y;
+  float bottomLeftZ => Ground.transform.position.z - Ground.transform.localScale.z / 2 + mNodeSize.z / 2;
 
   void Start()
   {
@@ -27,9 +28,67 @@ public class Grid : MonoBehaviour
       {
         var pos = new Vector3(bottomLeftX + mNodeSize.x * i, bottomLeftY, bottomLeftZ + mNodeSize.z * j);
         GridNodes[i, j] = new GridNode(pos, mNodeSize);
-        GridNodes[i, j].Color = Physics.CheckBox(pos, new Vector3(CollisionRadius, CollisionRadius, CollisionRadius), transform.rotation, ObstacleMask) ? Color.red : Color.white;
+        GridNodes[i, j].Color = Physics.CheckSphere(pos, CollisionRadius, ObstacleMask) ? Color.red : Color.white;
+        
       }
     }
+
+    AddNearestNodes();
+  }
+
+  private void AddNearestNodes()
+  {
+    for (int i = 0; i < NodesPerLine; i++)
+    {
+      for (int j = 0; j < NodesPerLine; j++)
+      {
+        // Left
+        if (j - 1 > 0)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i, j - 1]);
+        // Right
+        if (j + 1 < NodesPerLine)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i, j + 1]);
+        // Bottom
+        if (i - 1 >= 0)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j]);
+        // Bottom Left
+        if (i - 1 >= 0 && j - 1 > 0)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j - 1]);
+        // Bottom Right
+        if (i - 1 >= 0 && j + 1 < NodesPerLine)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j + 1]);
+        // Top
+        if (i + 1 < NodesPerLine)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j]);
+        // Top Left
+        if (i + 1 < NodesPerLine && j - 1 > 0)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j - 1]);
+        // Top Right
+        if (i + 1 < NodesPerLine && j + 1 < NodesPerLine)
+          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j + 1]);
+      }
+    }
+  }
+
+  public (int x, int z) GetCoordinatesFromPosition(float x, float z)
+  {
+    var idxX = (int)Mathf.Floor(Mathf.Abs(Ground.transform.position.x - Ground.transform.localScale.x / 2 - x) / mNodeSize.x);
+    var idxZ = (int)Mathf.Floor(Mathf.Abs(Ground.transform.position.z - Ground.transform.localScale.z / 2 - z) / mNodeSize.z);
+
+    return (idxX, idxZ);
+  }
+
+  public GridNode GetNodeFromPosition(float x, float z)
+  {
+    var coords = GetCoordinatesFromPosition(x, z);
+
+    return GridNodes[coords.z, coords.x];
+  }
+
+  public void UpdateNode(GridNode node, Action<GridNode> updateFunction)
+  {
+    var actualNode = GetNodeFromPosition(node.Position.x, node.Position.z);
+    updateFunction(actualNode);
   }
 
   private void Update()
@@ -47,11 +106,10 @@ public class Grid : MonoBehaviour
   {
     InvokeOnAllNodes(node => node.ResetColor());
 
-    var idxX = (int)Mathf.Floor(Mathf.Abs(transform.position.x - transform.localScale.x / 2 - x) / mNodeSize.x);
-    var idxZ = (int)Mathf.Floor(Mathf.Abs(transform.position.z - transform.localScale.z / 2 - z) / mNodeSize.z);
+    var coords = GetCoordinatesFromPosition(x, z);
 
-    GridNodes[idxX, idxZ].Color = Color.blue;
-    Debug.Log($"X: {idxX} | Z: {idxZ}");
+    GridNodes[coords.x, coords.z].Color = Color.blue;
+    Debug.Log($"X: {coords.x} | Z: {coords.z}");
   }
 
   private void OnDrawGizmos()
@@ -67,7 +125,7 @@ public class Grid : MonoBehaviour
     }
     else
     {
-      Gizmos.DrawWireCube(transform.position, transform.localScale);
+      Gizmos.DrawWireCube(Ground.transform.position, Ground.transform.localScale);
     }
   }
 
@@ -75,8 +133,8 @@ public class Grid : MonoBehaviour
   {
     if (NodesPerLine > 0)
     {
-      var width = transform.localScale.x;
-      var height = transform.localScale.z;
+      var width = Ground.transform.localScale.x;
+      var height = Ground.transform.localScale.z;
 
       return new Vector3(width / NodesPerLine, NodeHeight, height / NodesPerLine);
     }
@@ -87,7 +145,7 @@ public class Grid : MonoBehaviour
 
   private void InvokeOnAllNodes(Action<GridNode> act)
   {
-    foreach(var node in GridNodes)
+    foreach (var node in GridNodes)
     {
       act(node);
     }
