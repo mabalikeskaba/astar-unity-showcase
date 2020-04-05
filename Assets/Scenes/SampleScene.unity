@@ -689,7 +689,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 512
   Ground: {fileID: 724971426}
-  NodesPerLine: 60
+  NodesPerLine: 100
 --- !u!4 &1680031926
 Transform:
   m_ObjectHideFlags: 0

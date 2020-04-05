@@ -8,7 +8,7 @@ public class GridNode
   public Color Color { get; set; }
   public bool Occupied { get; set; }
   public List<GridNode> NearNodes { get; set; }
-  public float DistanceToTarget { get; set; } = 0f;
+  public float DistanceToTarget { get; set; } = float.MaxValue;
   public float DistanceToSource { get; set; } = 0f;
   public Vector3 CenterPoint { get; }
 

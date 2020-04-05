@@ -23,12 +23,23 @@ public class Pathfinding : MonoBehaviour
 
   public void OnGridClicked(GridNode node)
   {
+    mCurrentNode.DistanceToTarget = Vector3.Distance(mCurrentNode.CenterPoint, node.CenterPoint);
     NodeGrid.UpdateNode(node, updateNode => updateNode.Color = Color.blue);
-    foreach(var nearNode in mCurrentNode.NearNodes)
+    UpdateDistanceToTarget(node, mCurrentNode);
+    //NodeGrid.UpdateNode(mCurrentNode.NearNodes.First(x => x.DistanceToTarget == mCurrentNode.NearNodes.Min(y => y.DistanceToTarget)), updateNode => updateNode.Color = Color.black);
+  }
+
+  private void UpdateDistanceToTarget(GridNode target, GridNode node)
+  {
+    NodeGrid.UpdateNode(node, updateNode => updateNode.Color = Color.black);
+    if (node.DistanceToTarget > 1f)
     {
-      nearNode.DistanceToSource = 0;
-      nearNode.DistanceToTarget = Vector3.Distance(nearNode.CenterPoint, node.CenterPoint);
+      foreach (var nearNode in node.NearNodes)
+      {
+        nearNode.DistanceToSource = 0;
+        nearNode.DistanceToTarget = Vector3.Distance(nearNode.CenterPoint, target.CenterPoint);
+      }
+      UpdateDistanceToTarget(target, node.NearNodes.First(x => x.DistanceToTarget == node.NearNodes.Min(y => y.DistanceToTarget)));
     }
-    NodeGrid.UpdateNode(mCurrentNode.NearNodes.First(x => x.DistanceToTarget == mCurrentNode.NearNodes.Min(y => y.DistanceToTarget)), updateNode => updateNode.Color = Color.black);
   }
 }
