@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
@@ -8,7 +9,7 @@ public class Grid : MonoBehaviour
   public GameObject Ground;
   public int NodesPerLine = 1;
 
-  private GridNode[,] GridNodes;
+  private GridNode[,] mGridNodes;
   private Vector3 mNodeSize;
   private const float NodeHeight = 0.25f;
   private const float CollisionRadius = 0.25f;
@@ -19,7 +20,7 @@ public class Grid : MonoBehaviour
 
   void Start()
   {
-    GridNodes = new GridNode[NodesPerLine, NodesPerLine];
+    mGridNodes = new GridNode[NodesPerLine, NodesPerLine];
 
     mNodeSize = GetNodeSize();
 
@@ -28,45 +29,9 @@ public class Grid : MonoBehaviour
       for (int j = 0; j < NodesPerLine; j++)
       {
         var pos = new Vector3(bottomLeftX + mNodeSize.x * i, bottomLeftY, bottomLeftZ + mNodeSize.z * j);
-        GridNodes[i, j] = new GridNode(pos, mNodeSize);
-        GridNodes[i, j].Color = Physics.CheckSphere(pos, CollisionRadius, ObstacleMask) ? Color.red : Color.white;
-        
-      }
-    }
-
-    AddNearestNodes();
-  }
-
-  private void AddNearestNodes()
-  {
-    for (int i = 0; i < NodesPerLine; i++)
-    {
-      for (int j = 0; j < NodesPerLine; j++)
-      {
-        // Left
-        if (j - 1 > 0)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i, j - 1]);
-        // Right
-        if (j + 1 < NodesPerLine)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i, j + 1]);
-        // Bottom
-        if (i - 1 >= 0)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j]);
-        // Bottom Left
-        if (i - 1 >= 0 && j - 1 > 0)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j - 1]);
-        // Bottom Right
-        if (i - 1 >= 0 && j + 1 < NodesPerLine)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i - 1, j + 1]);
-        // Top
-        if (i + 1 < NodesPerLine)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j]);
-        // Top Left
-        if (i + 1 < NodesPerLine && j - 1 > 0)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j - 1]);
-        // Top Right
-        if (i + 1 < NodesPerLine && j + 1 < NodesPerLine)
-          GridNodes[i, j].NearNodes.Add(GridNodes[i + 1, j + 1]);
+        mGridNodes[i, j] = new GridNode(pos, mNodeSize, i, j);
+        mGridNodes[i,j].Occupied = Physics.CheckSphere(pos, CollisionRadius, ObstacleMask);
+        mGridNodes[i, j].Color = mGridNodes[i, j].Occupied ? Color.red : Color.white;
       }
     }
   }
@@ -83,13 +48,50 @@ public class Grid : MonoBehaviour
   {
     var coords = GetCoordinatesFromPosition(x, z);
 
-    return GridNodes[coords.z, coords.x];
+    return mGridNodes[coords.z, coords.x];
   }
 
   public void UpdateNode(GridNode node, Action<GridNode> updateFunction)
   {
-    var actualNode = GetNodeFromPosition(node.Position.x, node.Position.z);
+    var actualNode = mGridNodes[node.CoordZ, node.CoordX];
     updateFunction(actualNode);
+  }
+
+  public bool IsGridNodeOccupied(GridNode node)
+  {
+    return GetNodeFromPosition(node.Position.x, node.Position.z).Occupied;
+  }
+
+  public void ResetNodes()
+  {
+    foreach(var node in mGridNodes)
+    {
+      node.ResetCost();
+      node.ResetColor();
+    }
+  }
+
+  public List<GridNode> GetNearNodes(GridNode node)
+  {
+    var list = new List<GridNode>();
+    for(int i = -1; i <= 1; i++)
+    {
+      for (int j = -1; j <= 1; j++)
+      {
+        if(node.CoordX + i >= 0 && node.CoordX + i <= mGridNodes.Length)
+        {
+          if (node.CoordZ + j >= 0 && node.CoordZ + j <= mGridNodes.Length)
+          {
+            var currentNode = mGridNodes[node.CoordX + i, node.CoordZ + j];
+            if (currentNode != node)
+            {
+              list.Add(currentNode);
+            }
+          }
+        }
+      }
+    }
+    return list;
   }
 
   private void Update()
@@ -109,17 +111,17 @@ public class Grid : MonoBehaviour
 
     var coords = GetCoordinatesFromPosition(x, z);
 
-    OnClick?.Invoke(GridNodes[coords.z, coords.x]);
-    GridNodes[coords.x, coords.z].Color = Color.blue;
+    OnClick?.Invoke(mGridNodes[coords.z, coords.x]);
+    mGridNodes[coords.x, coords.z].Color = Color.blue;
     Debug.Log($"X: {coords.x} | Z: {coords.z}");
   }
 
   private void OnDrawGizmos()
   {
     Gizmos.color = Color.white;
-    if (GridNodes != null)
+    if (mGridNodes != null)
     {
-      foreach (var node in GridNodes)
+      foreach (var node in mGridNodes)
       {
         Gizmos.color = node.Color;
         Gizmos.DrawCube(node.Position, node.Size);
@@ -147,7 +149,7 @@ public class Grid : MonoBehaviour
 
   private void InvokeOnAllNodes(Action<GridNode> act)
   {
-    foreach (var node in GridNodes)
+    foreach (var node in mGridNodes)
     {
       act(node);
     }
