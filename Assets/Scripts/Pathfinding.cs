@@ -47,7 +47,7 @@ public class Pathfinding : MonoBehaviour
         if (currentNode == targetNode)
         {
           NodeGrid.UpdateNode(targetNode, updateNode => updateNode.Color = Color.blue);
-          MoveTransform(mClosedList);
+          //MoveTransform(mClosedList);
           return;
         }
         
