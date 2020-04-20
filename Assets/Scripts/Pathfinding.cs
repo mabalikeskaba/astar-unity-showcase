@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Threading;
 
 public class Pathfinding : MonoBehaviour
 {
@@ -25,31 +26,36 @@ public class Pathfinding : MonoBehaviour
 
   public void OnGridClicked(GridNode targetNode)
   {
-    NodeGrid.UpdateNode(targetNode, updateNode => updateNode.Color = Color.blue);
     DoTheStar(GetCurrentActiveNode(), targetNode);
   }
 
   private void DoTheStar(GridNode startNode, GridNode targetNode)
   {
-    NodeGrid.ResetNodes();
-
-    mOpenList = new List<GridNode> { startNode };
-    mClosedList = new List<GridNode>();
-
-    while (mOpenList.Count > 0)
+    if (!targetNode.Occupied)
     {
-      var currentNode = mOpenList.FirstOrDefault(x => x.FCost <= mOpenList.Min(y => y.FCost));
-      mOpenList.Remove(currentNode);
-      mClosedList.Add(currentNode);
+      NodeGrid.ResetNodes();
 
-      if (currentNode != null)
-        NodeGrid.UpdateNode(currentNode, updateNode => updateNode.Color = Color.cyan);
-      if (currentNode == targetNode)
+      mOpenList = new List<GridNode> { startNode };
+      mClosedList = new List<GridNode>();
+
+      while (mOpenList.Count > 0)
       {
-        return;
-      }
+        var currentNode = mOpenList.FirstOrDefault(x => x.FCost <= mOpenList.Min(y => y.FCost));
+        mOpenList.Remove(currentNode);
+        mClosedList.Add(currentNode);
 
-      CheckOnNearNodes(startNode, targetNode, currentNode, currentNode.FCost);
+        if (currentNode == targetNode)
+        {
+          NodeGrid.UpdateNode(targetNode, updateNode => updateNode.Color = Color.blue);
+          MoveTransform(mClosedList);
+          return;
+        }
+        
+        if (currentNode != null)
+          NodeGrid.UpdateNode(currentNode, updateNode => updateNode.Color = Color.cyan);
+        
+        CheckOnNearNodes(startNode, targetNode, currentNode, currentNode.FCost);
+      }
     }
   }
 
@@ -77,5 +83,11 @@ public class Pathfinding : MonoBehaviour
     return Mathf.Pow(a.CoordX - b.CoordX, 2) + Mathf.Pow(a.CoordZ - b.CoordZ, 2);
   }
 
-  private GridNode GetCurrentActiveNode() => NodeGrid?.GetNodeFromPosition(transform.position.x, transform.position.z);
+  //private void MoveTransform(List<GridNode> closedList)
+  //{
+  //  var distance = Vector2.Distance(transform.position, closedList.First().CenterPoint);
+  //  transform.position = new Vector3(transform.position.x + closedList.First().CenterPoint.x, transform.position.y, transform.position.z + closedList.First().CenterPoint.z);
+  //}
+
+  private GridNode GetCurrentActiveNode() => NodeGrid?.GetNodeFromPosition(transform.position.z, transform.position.x);
 }

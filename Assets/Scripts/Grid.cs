@@ -30,7 +30,7 @@ public class Grid : MonoBehaviour
       {
         var pos = new Vector3(bottomLeftX + mNodeSize.x * i, bottomLeftY, bottomLeftZ + mNodeSize.z * j);
         mGridNodes[i, j] = new GridNode(pos, mNodeSize, i, j);
-        mGridNodes[i,j].Occupied = Physics.CheckSphere(pos, CollisionRadius, ObstacleMask);
+        mGridNodes[i, j].Occupied = Physics.CheckSphere(pos, CollisionRadius, ObstacleMask);
         mGridNodes[i, j].Color = mGridNodes[i, j].Occupied ? Color.red : Color.white;
       }
     }
@@ -53,18 +53,18 @@ public class Grid : MonoBehaviour
 
   public void UpdateNode(GridNode node, Action<GridNode> updateFunction)
   {
-    var actualNode = mGridNodes[node.CoordZ, node.CoordX];
+    var actualNode = mGridNodes[node.CoordX, node.CoordZ];
     updateFunction(actualNode);
   }
 
   public bool IsGridNodeOccupied(GridNode node)
   {
-    return GetNodeFromPosition(node.Position.x, node.Position.z).Occupied;
+    return mGridNodes[node.CoordX, node.CoordZ].Occupied;
   }
 
   public void ResetNodes()
   {
-    foreach(var node in mGridNodes)
+    foreach (var node in mGridNodes)
     {
       node.ResetCost();
       node.ResetColor();
@@ -74,11 +74,11 @@ public class Grid : MonoBehaviour
   public List<GridNode> GetNearNodes(GridNode node)
   {
     var list = new List<GridNode>();
-    for(int i = -1; i <= 1; i++)
+    for (int i = -1; i <= 1; i++)
     {
       for (int j = -1; j <= 1; j++)
       {
-        if(node.CoordX + i >= 0 && node.CoordX + i <= mGridNodes.Length)
+        if (node.CoordX + i >= 0 && node.CoordX + i <= mGridNodes.Length)
         {
           if (node.CoordZ + j >= 0 && node.CoordZ + j <= mGridNodes.Length)
           {
@@ -107,12 +107,9 @@ public class Grid : MonoBehaviour
 
   private void UpdateTile(float x, float z)
   {
-    //InvokeOnAllNodes(node => node.ResetColor());
-
     var coords = GetCoordinatesFromPosition(x, z);
 
-    OnClick?.Invoke(mGridNodes[coords.z, coords.x]);
-    mGridNodes[coords.x, coords.z].Color = Color.blue;
+    OnClick?.Invoke(mGridNodes[coords.x, coords.z]);
     Debug.Log($"X: {coords.x} | Z: {coords.z}");
   }
 
