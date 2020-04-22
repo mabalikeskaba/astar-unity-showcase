@@ -1,17 +1,18 @@
 ﻿using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Threading;
 
 public class Pathfinding : MonoBehaviour
 {
   public Grid NodeGrid;
   private List<GridNode> mOpenList;
   private List<GridNode> mClosedList;
+  private List<GridNode> mWaypointList;
 
   // Start is called before the first frame update
   void Start()
   {
+    mWaypointList = new List<GridNode>();
     if (NodeGrid != null)
     {
       var currentNode = GetCurrentActiveNode();
@@ -27,6 +28,23 @@ public class Pathfinding : MonoBehaviour
   public void OnGridClicked(GridNode targetNode)
   {
     DoTheStar(GetCurrentActiveNode(), targetNode);
+  }
+
+  private void Update()
+  {
+    if (mWaypointList.Count > 0)
+    {
+      var waypoint = mWaypointList.First();
+      var time = Time.deltaTime * 3.5f;
+      var targetPoint = waypoint.CenterPoint - new Vector3(transform.localScale.x, 0, transform.localScale.y);
+      var currentPoint = new Vector3(transform.position.x, 0, transform.position.z);
+      var pos = Vector3.MoveTowards(currentPoint, targetPoint, time);
+      if (Vector3.Distance(currentPoint, targetPoint) < 0.05f)
+      {
+        mWaypointList.Remove(waypoint);
+      }
+      transform.position = new Vector3(pos.x, transform.position.y, pos.z);
+    }
   }
 
   private void DoTheStar(GridNode startNode, GridNode targetNode)
@@ -47,13 +65,18 @@ public class Pathfinding : MonoBehaviour
         if (currentNode == targetNode)
         {
           NodeGrid.UpdateNode(targetNode, updateNode => updateNode.Color = Color.blue);
-          //MoveTransform(mClosedList);
+          if (mClosedList.Count > 0)
+          {
+            mWaypointList.Clear();
+            mWaypointList.AddRange(mClosedList);
+            mWaypointList.Remove(mWaypointList.First());
+          }
           return;
         }
-        
+
         if (currentNode != null)
           NodeGrid.UpdateNode(currentNode, updateNode => updateNode.Color = Color.cyan);
-        
+
         CheckOnNearNodes(startNode, targetNode, currentNode, currentNode.FCost);
       }
     }
@@ -63,7 +86,8 @@ public class Pathfinding : MonoBehaviour
   {
     foreach (var nearNode in NodeGrid.GetNearNodes(currentNode))
     {
-      if(!mClosedList.Contains(nearNode) && !NodeGrid.IsGridNodeOccupied(nearNode))
+
+      if (!mClosedList.Contains(nearNode) && !NodeGrid.IsGridNodeOccupied(nearNode))
       {
         nearNode.Parent = currentNode;
         nearNode.GCost += GetDistance(currentNode, nearNode);
@@ -71,9 +95,8 @@ public class Pathfinding : MonoBehaviour
 
         if (mOpenList.Contains(nearNode) && mOpenList.FirstOrDefault(x => x == nearNode) is GridNode node && nearNode.GCost > node.GCost)
           continue;
-
-        mOpenList.Add(nearNode);
         NodeGrid.UpdateNode(nearNode, updateNode => updateNode.Color = Color.grey);
+        mOpenList.Add(nearNode);
       }
     }
   }
@@ -82,12 +105,6 @@ public class Pathfinding : MonoBehaviour
   {
     return Mathf.Pow(a.CoordX - b.CoordX, 2) + Mathf.Pow(a.CoordZ - b.CoordZ, 2);
   }
-
-  //private void MoveTransform(List<GridNode> closedList)
-  //{
-  //  var distance = Vector2.Distance(transform.position, closedList.First().CenterPoint);
-  //  transform.position = new Vector3(transform.position.x + closedList.First().CenterPoint.x, transform.position.y, transform.position.z + closedList.First().CenterPoint.z);
-  //}
 
   private GridNode GetCurrentActiveNode() => NodeGrid?.GetNodeFromPosition(transform.position.z, transform.position.x);
 }

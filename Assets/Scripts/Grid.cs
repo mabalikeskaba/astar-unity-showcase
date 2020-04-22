@@ -143,12 +143,4 @@ public class Grid : MonoBehaviour
     Debug.LogError("Nodes per line must be larger than 0!");
     return Vector3.one;
   }
-
-  private void InvokeOnAllNodes(Action<GridNode> act)
-  {
-    foreach (var node in mGridNodes)
-    {
-      act(node);
-    }
-  }
 }
